@@ -4,8 +4,12 @@ import numpy as np, cv2
 
 from detect_food import detect_food_from_cv2
 from spoonacular_client_min import search_recipes_simple
+from db import init_db, add_or_update_item, get_inventory, get_expired_items  # NEW
 
 app = FastAPI()
+
+# --- initialize DB when app starts ---
+init_db()
 
 # --- simple label normalizer so API gets good matches ---
 BLOCKLIST = {"bottle", "container", "packet", "box"}
@@ -34,7 +38,7 @@ def normalize_ingredients(labels):
             seen.add(x); final.append(x)
     return final
 
-# --- existing detect endpoint (kept) ---
+# --- existing detect endpoint (now also saves to DB) ---
 @app.post("/detect")
 async def detect(file: UploadFile = File(...)):
     contents = await file.read()
@@ -42,8 +46,13 @@ async def detect(file: UploadFile = File(...)):
     cv2_img = cv2.imdecode(np_arr, cv2.IMREAD_COLOR)
     if cv2_img is None:
         raise HTTPException(status_code=400, detail="Invalid image file")
-    items = detect_food_from_cv2(cv2_img)
-    return {"detected_items": normalize_ingredients(items)}
+    items = normalize_ingredients(detect_food_from_cv2(cv2_img))
+
+    # save detected items into DB
+    for item in items:
+        add_or_update_item(item, quantity=1)
+
+    return {"detected_items": items}
 
 # --- recipes from ingredient list ---
 class RecipesRequest(BaseModel):
@@ -75,8 +84,34 @@ async def detect_and_recipes(file: UploadFile = File(...), vegetarian: bool = Fa
     if not detected:
         return {"detected_items": [], "recipes": []}
 
+    # save detected items into DB
+    for item in detected:
+        add_or_update_item(item, quantity=1)
+
     try:
         recs = search_recipes_simple(detected, veg_only=vegetarian, top_k=top_k)
         return {"detected_items": detected, "recipes": recs}
     except Exception as e:
         raise HTTPException(status_code=502, detail=f"Recipe API error: {e}")
+
+# ------------------------
+# NEW: Inventory Endpoints
+# ------------------------
+
+class UpdateRequest(BaseModel):
+    item: str
+    quantity: int = 1
+    expiry: str | None = None  # optional, YYYY-MM-DD
+
+@app.get("/inventory")
+def inventory():
+    return {"items": get_inventory()}
+
+@app.post("/update")
+def update_item_route(payload: UpdateRequest):
+    add_or_update_item(payload.item, payload.quantity, payload.expiry)
+    return {"message": "Item added/updated"}
+
+@app.get("/expired")
+def expired_items():
+    return {"expired_items": get_expired_items()}
