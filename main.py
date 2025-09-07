@@ -1,5 +1,6 @@
 from fastapi import FastAPI, File, UploadFile, HTTPException
 from pydantic import BaseModel
+from typing import Optional
 import numpy as np, cv2
 
 from detect_food import detect_food_from_cv2
@@ -101,7 +102,8 @@ async def detect_and_recipes(file: UploadFile = File(...), vegetarian: bool = Fa
 class UpdateRequest(BaseModel):
     item: str
     quantity: int = 1
-    expiry: str | None = None  # optional, YYYY-MM-DD
+    expiry: Optional[str] = None  # optional, YYYY-MM-DD
+
 
 @app.get("/inventory")
 def inventory():
