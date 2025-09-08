@@ -1,8 +1,9 @@
-fastapi
-uvicorn
-opencv-python
-ultralytics
-numpy
-pydantic
-python-multipart
-requests
+fastapi==0.95.2
+uvicorn==0.22.0
+opencv-python-headless==4.8.0.74
+ultralytics==8.0.196
+numpy==1.24.3
+pydantic==1.10.9
+python-multipart==0.0.6
+requests==2.31.0
+
