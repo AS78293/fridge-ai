@@ -11,7 +11,7 @@ numpy==1.24.4
 pydantic==2.5.0
 python-multipart==0.0.6
 requests==2.31.0
-pillow-simd
+pillow
 
 # ✅ Add CPU-only torch + torchvision
 torch==2.1.0+cpu
