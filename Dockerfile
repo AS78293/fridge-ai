@@ -8,7 +8,7 @@ ENV PYTHONUNBUFFERED=1
 # Set working directory
 WORKDIR /app
 
-# Install all required system dependencies for OpenCV, numpy, etc.
+# Install system dependencies (no mesa-glx, just libgl1)
 RUN apt-get update && apt-get install -y \
     build-essential \
     cmake \
@@ -17,7 +17,6 @@ RUN apt-get update && apt-get install -y \
     libxext6 \
     libxrender1 \
     libgl1 \
-    libgl1-mesa-glx \
     libglfw3 \
     libjpeg-dev \
     zlib1g-dev \
@@ -34,5 +33,5 @@ COPY . .
 # Expose Cloud Run default port
 EXPOSE 8080
 
-# Run Uvicorn using PORT env from Cloud Run
+# Run Uvicorn using Cloud Run's PORT env
 CMD ["sh", "-c", "uvicorn main:app --host 0.0.0.0 --port $PORT"]
